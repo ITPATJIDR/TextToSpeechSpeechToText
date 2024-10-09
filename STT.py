@@ -9,7 +9,7 @@ import whisper      # pip install openai-whisper
 
 def save_audio_file(audio_data, file_path):
     # Save the audio file in WAV format
-    with wave.open(file_path, "wb") as f:
+    with wave.open(file_path, "wb", encoding="utf-8") as f:
         f.setnchannels(1)  # Mono channel
         f.setsampwidth(audio_data.sample_width)
         f.setframerate(audio_data.sample_rate)
@@ -44,7 +44,7 @@ def speech_to_text():
 
         # Save the text to the output directory
         text_file_path = f"output/speech_stt_output_{current_time}.txt"
-        with open(text_file_path, "w") as file:
+        with open(text_file_path, "w", encoding="utf-8") as file:
             file.write(text)
             print(f"Text saved to {text_file_path}")
 
@@ -64,18 +64,46 @@ class WhisperModel(Enum):
     TURBO = "turbo"         # params 809M | req VRAM ~ 6 GB
     # ref.md for more details 
 
-def whisper_to_text(audio_file_path=None, save_record_audio=True, model:WhisperModel=WhisperModel.BASE):
+def whisper_to_text(audio_file_path=None, save_record_audio=True, advance_mode=False, model:WhisperModel=WhisperModel.BASE):
+    # ffmpeg must be installed on device to use whisper
     dt = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # create whisper model instance
-    model = whisper.load_model(model.value)
+    try:
+        model = whisper.load_model(model.value, device="cuda")
+        print("using GPU")
+    except:
+        model = whisper.load_model(model.value)
     
     if (audio_file_path):
+        ### Simple mode
         # import audio file
-        result = model.transcribe(audio_file_path)
+        audio = whisper.load_audio(audio_file_path)
+        # compute result returen as a Dict object
+        result = model.transcribe(audio)    
+        print(f"\nResult Simple: {result}")
+        
+        ### Advance mode
+        if (advance_mode):
+            # pad or trim audio to 30 seconds in Whisper standard format
+            audio_trim = whisper.pad_or_trim(audio)     
+            # create log-mel spectrogram
+            mel = whisper.log_mel_spectrogram(audio_trim).to(model.device)
+            
+            # detect speech langs
+            _, probs = model.detect_language(mel)
+            print(f"Detected Language: {max(probs, key=probs.get)}")
+            
+            # decode the audio with options
+            options = whisper.DecodingOptions(temperature=0.5)
+            # result as a DecoderResult object
+            result = whisper.decode(model, mel, options)      
+
+            print(type(result))
+            print(f"\nResult Advance: {result}")
         
     else:
-        # record audio
+        # recording audio
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
             print("\nPlease speak...")
@@ -89,15 +117,17 @@ def whisper_to_text(audio_file_path=None, save_record_audio=True, model:WhisperM
         
         if (not save_record_audio):
             os.remove(recorded_audio_file_path)
-            
-    # print result
-    print(f"\nRecognized Text: {result}")
     
+    if (advance_mode):
+        print(f"Whisper Result text: {result.text}")
+    else:
+        print(f"\nWhisper Result Text: {result['text']}")
+            
     # save the result to a text transcription file
     output_file_path = f"output/stt_whisper_output_{dt}.txt"
-    with open(output_file_path, "w") as file:
-        file.write(result)
-        print(f"Text saved to {output_file_path}")
+    with open(output_file_path, "w", encoding="utf-8") as file:
+        file.write(str(result))
+        print(f"\n\nText saved to {output_file_path}")
     
     ...
 
@@ -105,5 +135,9 @@ def whisper_to_text(audio_file_path=None, save_record_audio=True, model:WhisperM
 
 if __name__ == "__main__":
     # speech_to_text()
+    
+    
     # whisper_to_text(model=WhisperModel.MEDIUM)
-    whisper_to_text(audio_file_path="audio/tts_output_20241010_032241.mp3")
+    # whisper_to_text(audio_file_path="audio/tts_output_20241010_032245.mp3")
+    whisper_to_text(audio_file_path="audio/audio_20241008_213109.wav", model=WhisperModel.TURBO,)
+    

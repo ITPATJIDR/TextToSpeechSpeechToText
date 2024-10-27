@@ -1,0 +1,4 @@
+name: tts
+channels:
+  - defaults
+prefix: C:\Users\acezg\.conda\envs\tts

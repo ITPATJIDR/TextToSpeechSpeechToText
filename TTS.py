@@ -6,6 +6,7 @@ import pyttsx3
 from gtts import gTTS       # pip install gtts || pip install google-cloud-speech
 # from playsound import playsound            # pip install playsound (available on Python 3.9 and below)
 
+import asyncio
 
 def text_to_speech(file_path):
     # Initialize TTS engine
@@ -59,7 +60,8 @@ if __name__ == "__main__":
     # text_to_speech(file)
     
     # new text to speech from gTTS (Google Text To Speech)
-    text_to_speech_google(text="Come!, into the unknown")
-    text_to_speech_google(file=file)
-    text_to_speech_google(text="Haiya! Mr. Roger don't like this MSG", save_audio=False)
+    # asyncio.run(text_to_speech_google(text="Come!, into the unknown"))
+    # asyncio.run(text_to_speech_google(file=file))
+    # asyncio.run(text_to_speech_google(text="Haaaaiyaaaaaaaaaaaaaa! Mr. Roger don't like this MSG", save_audio=False))
+    asyncio.run(text_to_speech_google(text="สวัสดีครับท่านผู้ชมขอต้อนรับสู่island อยากมีแฟน theirs a chanceในดินแดนมหัศจรรย์", save_audio=False, lang="th"))
     

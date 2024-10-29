@@ -1,10 +1,11 @@
-import speech_recognition as sr
+import speech_recognition as sr         # pip install SpeechRecognition
 import os
 from datetime import datetime
 from enum import Enum
 import wave
 
 import whisper      # pip install openai-whisper
+import asyncio
 
 
 def save_audio_file(audio_data, file_path):
@@ -64,7 +65,7 @@ class WhisperModel(Enum):
     TURBO = "turbo"         # params 809M | req VRAM ~ 6 GB
     # ref.md for more details 
 
-def whisper_to_text(audio_file_path=None, save_record_audio=True, advance_mode=False, model:WhisperModel=WhisperModel.BASE):
+async def whisper_to_text(audio_file_path=None, save_record_audio=True, advance_mode=False, model:WhisperModel=WhisperModel.BASE):
     # ffmpeg must be installed on device to use whisper
     dt = datetime.now().strftime("%Y%m%d_%H%M%S")
     
@@ -78,6 +79,9 @@ def whisper_to_text(audio_file_path=None, save_record_audio=True, advance_mode=F
     if (audio_file_path):
         ### Simple mode
         # import audio file
+        root = os.path.dirname(os.path.abspath(__file__))
+        audio_file_path = os.path.join(root, audio_file_path)
+        print(f"\nAudio file path: {audio_file_path}\n\n")
         audio = whisper.load_audio(audio_file_path)
         # compute result returen as a Dict object
         result = model.transcribe(audio)    
@@ -139,5 +143,6 @@ if __name__ == "__main__":
     
     # whisper_to_text(model=WhisperModel.MEDIUM)
     # whisper_to_text(audio_file_path="audio/tts_output_20241010_032245.mp3")
-    whisper_to_text(audio_file_path="audio/audio_20241008_213109.wav", model=WhisperModel.TURBO,)
+    asyncio.run(whisper_to_text(audio_file_path="audio/tts_output_20241029_152136.mp3", model=WhisperModel.TURBO,))
+    
     
